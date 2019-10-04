@@ -60,15 +60,27 @@ X = read.table('./data/bin_se_1000K/bin_centered_k562_1000K.txt',
                                       S2=start_gene, E2=end_gene))
 # summarize by clsuter
 # one cluster one row
+## one gene may have multiple rows corresponding to multiple enhancers
+head(X)
 X.clu = X %>%
-    filter(!is.na(X$index)) %>%
+    filter(!is.na(index)) %>%
     group_by(index) %>%
     summarize(
-        ngene = n(), # #genes in a cluster
-        nse = length(unique(SE_details[SE_details != ''])), # #SEs have contact with genes in a cluster
-        ngene_interacted_se = length(SE_details[SE_details != ''])
-    ) %>%
-    mutate(pgene_interacted_se = ngene_interacted_se / ngene * 100)
+        ngene = length(unique(bin)), # #genes in a cluster
+        nse = length(unique(SE_details[SE_details != ''])) # #SEs have contact with genes in a cluster
+    ) 
+# summarize on cluster_gene pair
+X.clu.gene = X%>%
+    filter(!is.na(index)) %>%
+    filter(SE_details != '') %>%
+    group_by(index) %>%
+    summarize(n.gene.w.se = length(unique(bin))) # # of unique genes interacting with at least one enhancers
+
+X.clu = X.clu %>%
+    left_join(X.clu.gene, by='index') %>%
+    mutate(p.gene.w.se = n.gene.w.se / ngene * 100)
+head(X.clu)
+stop()
 # one cluster-enhancer one row
 X.clu.se = X %>%
     filter(!is.na(X$index), # only look at genes assigned to clusters
